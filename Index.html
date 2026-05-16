@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tong Sampah Pintar</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --green-deep:   #1a3a2a;
+    --green-mid:    #2d6a4f;
+    --green-bright: #52b788;
+    --green-light:  #b7e4c7;
+    --green-pale:   #d8f3dc;
+    --cream:        #f8f6f0;
+    --cream-dark:   #ede9df;
+    --text-dark:    #1a2e1f;
+    --text-mid:     #3d5a45;
+    --text-light:   #6b8f72;
+    --warning:      #e76f51;
+    --warning-pale: #fde8e1;
+    --white:        #ffffff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text-dark); min-height:100vh; }
+
+  /* HEADER */
+  header {
+    background:var(--green-deep); padding:0 40px;
+    display:flex; align-items:center; justify-content:space-between;
+    height:72px; position:sticky; top:0; z-index:100;
+    box-shadow:0 2px 20px rgba(26,58,42,0.3);
+  }
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo-icon { width:38px; height:38px; background:var(--green-bright); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .logo-text { font-family:'Fraunces',serif; font-size:20px; color:var(--white); font-weight:600; }
+  .logo-sub { font-size:11px; color:var(--green-light); font-weight:300; letter-spacing:0.5px; }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .conn-badge { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--green-light); font-family:'DM Mono',monospace; }
+  .conn-dot { width:8px; height:8px; border-radius:50%; background:#666; transition:background 0.3s; }
+  .conn-dot.online  { background:var(--green-bright); box-shadow:0 0 6px var(--green-bright); animation:blink 2s infinite; }
+  .conn-dot.offline { background:var(--warning); box-shadow:0 0 6px var(--warning); animation:none; }
+  .conn-dot.connecting { background:#f4a261; animation:blink 0.8s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .last-update { font-size:11px; color:var(--text-light); font-family:'DM Mono',monospace; }
+
+  /* MAIN */
+  main { max-width:1100px; margin:0 auto; padding:32px 24px 60px; }
+
+  /* CONFIG BAR */
+  .config-bar {
+    background:var(--green-deep); border-radius:14px;
+    padding:18px 22px; display:flex; align-items:center;
+    gap:12px; margin-bottom:28px; flex-wrap:wrap;
+  }
+  .config-bar label { font-size:12px; color:var(--green-light); font-family:'DM Mono',monospace; white-space:nowrap; }
+  .config-bar input {
+    flex:1; min-width:240px;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15);
+    border-radius:8px; padding:8px 12px; color:var(--white);
+    font-family:'DM Mono',monospace; font-size:12px; outline:none;
+  }
+  .config-bar input:focus { border-color:var(--green-bright); }
+  .config-bar input::placeholder { color:rgba(255,255,255,0.3); }
+  .btn { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; border:none; font-family:'DM Sans',sans-serif; transition:0.2s; white-space:nowrap; }
+  .btn-primary { background:var(--green-bright); color:var(--green-deep); }
+  .btn-primary:hover { background:var(--green-light); }
+  .btn-outline { background:transparent; color:var(--green-light); border:1px solid rgba(255,255,255,0.2); }
+  .btn-outline:hover { background:rgba(255,255,255,0.08); }
+  .btn-danger { background:#c1440e; color:white; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family:'DM Mono',monospace; font-size:11px; color:var(--green-mid);
+    letter-spacing:2px; text-transform:uppercase; margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section-label::after { content:''; flex:1; height:1px; background:var(--green-light); opacity:0.4; }
+
+  /* CARDS */
+  .cards-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+  .card {
+    background:var(--white); border-radius:16px; padding:22px 20px;
+    border:1px solid var(--cream-dark); position:relative; overflow:hidden;
+    transition:transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(26,58,42,0.08); }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--green-bright); border-radius:16px 16px 0 0; transition:background 0.3s; }
+  .card.warn-card::before { background:var(--warning); }
+  .card-icon { font-size:26px; margin-bottom:10px; display:block; }
+  .card-label { font-size:11px; color:var(--text-light); font-family:'DM Mono',monospace; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:6px; }
+  .card-value { font-family:'Fraunces',serif; font-size:32px; font-weight:700; color:var(--text-dark); line-height:1; }
+  .card-value.sm { font-size:15px; font-weight:600; margin-top:6px; line-height:1.3; }
+  .card-value.ok { color:var(--green-mid); }
+  .card-value.warn { color:var(--warning); }
+  .card-value.dim { color:#aaa; }
+  .card-sub { font-size:11px; color:var(--text-light); margin-top:6px; line-height:1.4; }
+
+  /* CAPACITY BAR */
+  .cap-bar-wrap { margin-top:10px; background:var(--cream-dark); border-radius:99px; height:7px; overflow:hidden; }
+  .cap-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--green-bright),var(--green-mid)); transition:width 1s cubic-bezier(.4,0,.2,1), background 0.5s; width:0%; }
+  .cap-bar-fill.danger { background:linear-gradient(90deg,#e76f51,#c1440e); }
+  .cap-bar-fill.medium { background:linear-gradient(90deg,#f4a261,#e76f51); }
+
+  /* SWITCH */
+  .switch-wrap { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+  .switch-label-txt { font-size:14px; font-weight:600; color:var(--text-mid); }
+  .toggle { position:relative; width:54px; height:28px; cursor:pointer; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .slider { position:absolute; inset:0; background:var(--cream-dark); border-radius:99px; transition:0.3s; border:1.5px solid var(--green-light); }
+  .slider::before { content:''; position:absolute; width:20px; height:20px; left:3px; top:50%; transform:translateY(-50%); background:var(--white); border-radius:50%; transition:0.3s; box-shadow:0 1px 4px rgba(0,0,0,0.15); }
+  input:checked + .slider { background:var(--green-bright); border-color:var(--green-bright); }
+  input:checked + .slider::before { transform:translate(26px,-50%); }
+
+  /* BOTTOM GRID */
+  .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .panel { background:var(--white); border-radius:16px; padding:24px; border:1px solid var(--cream-dark); }
+  .panel-title { font-family:'Fraunces',serif; font-size:16px; font-weight:600; color:var(--text-dark); margin-bottom:2px; }
+  .panel-sub { font-size:11px; color:var(--text-light); margin-bottom:18px; font-family:'DM Mono',monospace; }
+  .chart-wrap { position:relative; height:240px; }
+
+  /* TABLE */
+  .log-table-wrap { overflow-x:auto; max-height:280px; overflow-y:auto; border-radius:8px; border:1px solid var(--cream-dark); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  thead th { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--text-light); padding:8px 12px; border-bottom:1px solid var(--cream-dark); text-align:left; position:sticky; top:0; background:var(--white); }
+  tbody td { padding:9px 12px; border-bottom:1px solid var(--cream-dark); color:var(--text-mid); font-family:'DM Mono',monospace; font-size:11px; }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody tr:hover td { background:var(--cream); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:500; font-family:'DM Sans',sans-serif; }
+  .pill.green { background:var(--green-pale); color:var(--green-mid); }
+  .pill.warn  { background:var(--warning-pale); color:var(--warning); }
+  .empty-state { text-align:center; padding:40px 20px; color:var(--text-light); font-size:13px; }
+  .empty-state span { font-size:32px; display:block; margin-bottom:8px; }
+
+  /* LOADING SKELETON */
+  .skeleton { background:linear-gradient(90deg,var(--cream-dark) 25%,#f0ece2 50%,var(--cream-dark) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; color:transparent!important; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ERROR BANNER */
+  .error-banner { background:var(--warning-pale); border:1px solid #f4a261; border-radius:10px; padding:12px 16px; font-size:12px; color:#7d3319; margin-bottom:16px; display:none; align-items:center; gap:8px; }
+  .error-banner.show { display:flex; }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--green-deep); color:var(--white); padding:12px 18px; border-radius:10px; font-size:13px; z-index:999; transform:translateY(80px); opacity:0; transition:0.3s; border-left:3px solid var(--green-bright); max-width:300px; }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.error { border-left-color:var(--warning); }
+
+  /* RESPONSIVE */
+  @media (max-width:768px) {
+    header { padding:0 16px; }
+    main { padding:20px 16px 40px; }
+    .cards-grid { grid-template-columns:repeat(2,1fr); }
+    .bottom-grid { grid-template-columns:1fr; }
+  }
+
+  footer { text-align:center; padding:24px; font-size:11px; color:var(--text-light); font-family:'DM Mono',monospace; border-top:1px solid var(--cream-dark); margin-top:40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🗑️</div>
+    <div>
+      <div class="logo-text">Tong Sampah Pintar</div>
+      <div class="logo-sub">Smart Waste Monitoring System</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="conn-badge">
+      <div class="conn-dot connecting" id="connDot"></div>
+      <span id="connText">Belum terhubung</span>
+    </div>
+    <div class="last-update" id="lastUpdate">—</div>
+  </div>
+</header>
+
+<main>
+
+  <!-- CONFIG -->
+  <div class="config-bar">
+    <label>AUTH TOKEN</label>
+    <input type="text" id="authToken" placeholder="Paste Blynk Auth Token kamu di sini..." />
+    <button class="btn btn-primary" onclick="simpanConfig()">🔌 Sambungkan</button>
+    <button class="btn btn-outline" onclick="exportCSV()">⬇️ Export CSV</button>
+    <button class="btn btn-danger" onclick="clearLog()">🗑️ Hapus Log</button>
+  </div>
+
+  <!-- ERROR BANNER -->
+  <div class="error-banner" id="errBanner">
+    <span>⚠️</span>
+    <span id="errMsg">Gagal mengambil data dari Blynk. Pastikan token benar dan ESP32 menyala.</span>
+  </div>
+
+  <!-- STATUS CARDS -->
+  <div class="section-label">Status Realtime</div>
+  <div class="cards-grid">
+
+    <div class="card" id="cardCap">
+      <span class="card-icon">📊</span>
+      <div class="card-label">Kapasitas Tong</div>
+      <div class="card-value dim" id="valCapacity">—</div>
+      <div class="cap-bar-wrap"><div class="cap-bar-fill" id="capBar"></div></div>
+      <div class="card-sub" id="capDesc">Menunggu data...</div>
+    </div>
+
+    <div class="card" id="cardLid">
+      <span class="card-icon" id="iconLid">🔒</span>
+      <div class="card-label">Status Tutup</div>
+      <div class="card-value sm dim" id="valLid">—</div>
+      <div class="card-sub">Posisi tutup tong saat ini</div>
+    </div>
+
+    <div class="card" id="cardError">
+      <span class="card-icon" id="iconErr">✅</span>
+      <div class="card-label">Status Error</div>
+      <div class="card-value sm dim" id="valError">—</div>
+      <div class="card-sub">Kondisi sistem</div>
+    </div>
+
+    <div class="card">
+      <span class="card-icon">⚡</span>
+      <div class="card-label">Kontrol Sistem</div>
+      <div class="switch-wrap">
+        <span class="switch-label-txt" id="switchLabel">—</span>
+        <label class="toggle">
+          <input type="checkbox" id="systemSwitch" onchange="toggleSistem(this.checked)" disabled>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="card-sub" id="switchSub">Sambungkan token untuk mengontrol</div>
+    </div>
+
+  </div>
+
+  <!-- CHART + TABLE -->
+  <div class="section-label">Riwayat & Log</div>
+  <div class="bottom-grid">
+
+    <div class="panel">
+      <div class="panel-title">Grafik Kapasitas</div>
+      <div class="panel-sub" id="chartSub">Menunggu koneksi...</div>
+      <div class="chart-wrap">
+        <canvas id="capChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Tabel Log Riwayat</div>
+      <div class="panel-sub">Tersimpan di browser · Max 200 baris</div>
+      <div class="log-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Kapasitas</th>
+              <th>Tutup</th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>Tong Sampah Pintar &nbsp;·&nbsp; ESP32 + Blynk IoT &nbsp;·&nbsp; Tugas Akhir</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────
+let TOKEN     = localStorage.getItem('blynk_token') || '';
+let logData   = JSON.parse(localStorage.getItem('log_data') || '[]');
+let fetchTimer = null;
+let failCount  = 0;
+let isConnected = false;
+let lastLogTime = 0;
+let isSwitchBusy = false;
+
+const BASE = 'https://blynk.cloud/external/api';
+
+// ─────────────────────────────────────────
+// CHART SETUP
+// ─────────────────────────────────────────
+const ctx = document.getElementById('capChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Kapasitas (%)',
+      data: [],
+      borderColor: '#52b788',
+      backgroundColor: 'rgba(82,183,136,0.12)',
+      borderWidth: 2.5,
+      pointRadius: 4,
+      pointBackgroundColor: '#52b788',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+      tension: 0.4,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: { label: ctx => ' ' + ctx.parsed.y + '%' },
+        backgroundColor: '#1a3a2a',
+        titleFont: { family: 'DM Mono' },
+        bodyFont:  { family: 'DM Mono' },
+      }
+    },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        ticks: { callback: v => v+'%', font:{family:'DM Mono',size:10}, color:'#6b8f72' },
+        grid: { color:'rgba(0,0,0,0.05)' }
+      },
+      x: {
+        ticks: { font:{family:'DM Mono',size:9}, color:'#6b8f72', maxTicksLimit:8 },
+        grid: { display:false }
+      }
+    }
+  }
+});
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+window.onload = () => {
+  renderLog();
+  if (TOKEN) {
+    document.getElementById('authToken').value = TOKEN;
+    mulaiMonitoring();
+  }
+};
+
+// ─────────────────────────────────────────
+// SIMPAN CONFIG
+// ─────────────────────────────────────────
+function simpanConfig() {
+  const val = document.getElementById('authToken').value.trim();
+  if (!val) { showToast('⚠️ Token tidak boleh kosong!', true); return; }
+  TOKEN = val;
+  localStorage.setItem('blynk_token', TOKEN);
+  failCount = 0;
+  mulaiMonitoring();
+  showToast('🔌 Mencoba menghubungkan...');
+}
+
+// ─────────────────────────────────────────
+// MULAI MONITORING
+// ─────────────────────────────────────────
+function mulaiMonitoring() {
+  setConnStatus('connecting');
+  if (fetchTimer) clearInterval(fetchTimer);
+  fetchData();
+  fetchTimer = setInterval(fetchData, 3000); // refresh tiap 3 detik
+}
+
+// ─────────────────────────────────────────
+// FETCH SEMUA DATA DARI BLYNK
+// Blynk HTTP API format: /get?token=XXX&V0
+// ─────────────────────────────────────────
+async function fetchData() {
+  if (!TOKEN) return;
+
+  try {
+    // Fetch semua pin sekaligus dengan format yang benar
+    const [v0, v1, v2, v3] = await Promise.all([
+      blynkGet('V0'),
+      blynkGet('V1'),
+      blynkGet('V2'),
+      blynkGet('V3'),
+    ]);
+
+    // Semua berhasil → online
+    failCount = 0;
+    setConnStatus('online');
+    hideBanner();
+
+    const swVal  = parseInt(v0)  || 0;
+    const lid    = String(v1)    || 'TERTUTUP';
+    const cap    = parseInt(v2)  || 0;
+    const err    = String(v3)    || 'NORMAL';
+
+    updateUI(swVal, lid, cap, err);
+    tambahLog(cap, lid, err);
+
+  } catch(e) {
+    failCount++;
+    console.error('Fetch gagal:', e.message);
+
+    if (failCount >= 2) {
+      setConnStatus('offline');
+      showBanner('Gagal terhubung ke Blynk. Cek token dan pastikan ESP32 menyala.');
+    }
+  }
+}
+
+// ─────────────────────────────────────────
+// BLYNK GET — Format URL yang benar
+// ─────────────────────────────────────────
+async function blynkGet(pin) {
+  const url = `${BASE}/get?token=${TOKEN}&${pin}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} untuk ${pin}`);
+
+  const raw = await res.text(); // ambil sebagai text dulu
+
+  // Coba parse JSON (untuk Integer: V0, V2)
+  try {
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data[0] : data;
+  } catch(e) {
+    // Plain text (untuk String: V1, V3) — bersihkan tanda kutip
+    return raw.replace(/^"|"$/g, '').trim();
+  }
+}
+
+// ─────────────────────────────────────────
+// BLYNK SET — Kirim perintah ke ESP32
+// ─────────────────────────────────────────
+async function blynkSet(pin, value) {
+  const url = `${BASE}/update?token=${TOKEN}&${pin}=${value}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Gagal set ${pin}`);
+}
+
+// ─────────────────────────────────────────
+// UPDATE SEMUA UI
+// ─────────────────────────────────────────
+function updateUI(sw, lid, cap, err) {
+  // ── Kapasitas
+  const capEl  = document.getElementById('valCapacity');
+  const barEl  = document.getElementById('capBar');
+  const descEl = document.getElementById('capDesc');
+
+  capEl.textContent = cap + '%';
+  capEl.className   = 'card-value' + (cap >= 80 ? ' warn' : ' ok');
+  barEl.style.width = cap + '%';
+  barEl.className   = 'cap-bar-fill' + (cap >= 80 ? ' danger' : cap >= 50 ? ' medium' : '');
+
+  const capMsg = cap >= 100 ? '🔴 Tong PENUH! Segera kosongkan'
+               : cap >= 80  ? '🟡 Hampir penuh'
+               : cap >= 40  ? '🟢 Terisi sebagian'
+               :              '🟢 Masih kosong';
+  descEl.textContent = capMsg;
+
+  // ── Lid Status
+  const lidEl   = document.getElementById('valLid');
+  const iconLid = document.getElementById('iconLid');
+  const cardLid = document.getElementById('cardLid');
+  lidEl.textContent = lid;
+
+  if (lid === 'TERBUKA') {
+    lidEl.className = 'card-value sm warn';
+    iconLid.textContent = '🔓';
+    cardLid.classList.add('warn-card');
+  } else {
+    lidEl.className = 'card-value sm ok';
+    iconLid.textContent = '🔒';
+    cardLid.classList.remove('warn-card');
+  }
+
+  // ── Error Status
+  const errEl   = document.getElementById('valError');
+  const iconErr = document.getElementById('iconErr');
+  const cardErr = document.getElementById('cardError');
+  const isError = err.includes('ERROR');
+  errEl.textContent = isError ? 'ERROR' : 'NORMAL';
+
+  if (isError) {
+    errEl.className = 'card-value sm warn';
+    iconErr.textContent = '⚠️';
+    cardErr.classList.add('warn-card');
+  } else {
+    errEl.className = 'card-value sm ok';
+    iconErr.textContent = '✅';
+    cardErr.classList.remove('warn-card');
+  }
+
+  // ── Switch — sync dari server, jangan overwrite kalau sedang busy
+  if (!isSwitchBusy) {
+    const swEl = document.getElementById('systemSwitch');
+    swEl.checked  = sw === 1;
+    swEl.disabled = false;
+    document.getElementById('switchLabel').textContent = sw === 1 ? 'ON' : 'OFF';
+    document.getElementById('switchSub').textContent   = sw === 1
+      ? '✅ Sistem aktif — klik untuk matikan'
+      : '⭕ Sistem mati — klik untuk nyalakan';
+  }
+
+  // ── Last update
+  document.getElementById('lastUpdate').textContent =
+    new Date().toLocaleTimeString('id-ID');
+
+  // ── Chart
+  const label = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  chart.data.labels.push(label);
+  chart.data.datasets[0].data.push(cap);
+  if (chart.data.labels.length > 30) {
+    chart.data.labels.shift();
+    chart.data.datasets[0].data.shift();
+  }
+  chart.update();
+  document.getElementById('chartSub').textContent = 'Update tiap 3 detik · ' + chart.data.labels.length + ' titik data';
+}
+
+// ─────────────────────────────────────────
+// TOGGLE ON/OFF
+// ─────────────────────────────────────────
+async function toggleSistem(isOn) {
+  if (!TOKEN) {
+    showToast('⚠️ Belum terhubung ke Blynk!', true);
+    document.getElementById('systemSwitch').checked = !isOn;
+    return;
+  }
+
+  isSwitchBusy = true;
+  document.getElementById('systemSwitch').disabled = true;
+  document.getElementById('switchSub').textContent = 'Mengirim perintah...';
+
+  try {
+    await blynkSet('V0', isOn ? 1 : 0);
+    document.getElementById('switchLabel').textContent = isOn ? 'ON' : 'OFF';
+    document.getElementById('switchSub').textContent   = isOn
+      ? '✅ Sistem aktif — klik untuk matikan'
+      : '⭕ Sistem mati — klik untuk nyalakan';
+    showToast(isOn ? '✅ Sistem berhasil dinyalakan' : '🔴 Sistem berhasil dimatikan');
+  } catch(e) {
+    showToast('❌ Gagal kirim perintah, coba lagi', true);
+    document.getElementById('systemSwitch').checked = !isOn; // rollback
+  } finally {
+    document.getElementById('systemSwitch').disabled = false;
+    isSwitchBusy = false;
+  }
+}
+
+// ─────────────────────────────────────────
+// LOG
+// ─────────────────────────────────────────
+function tambahLog(cap, lid, err) {
+  const now = Date.now();
+  if (now - lastLogTime < 30000) return; // tiap 30 detik
+  lastLogTime = now;
+
+  logData.unshift({
+    waktu: new Date().toLocaleString('id-ID'),
+    kapasitas: cap,
+    lid: lid,
+    error: err.includes('ERROR') ? 'ERROR' : 'NORMAL'
+  });
+
+  if (logData.length > 200) logData.pop();
+  localStorage.setItem('log_data', JSON.stringify(logData));
+  renderLog();
+}
+
+function renderLog() {
+  const tbody = document.getElementById('logBody');
+  if (!logData.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><span>📋</span>Belum ada log. Data masuk otomatis setelah terhubung.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = logData.map(d => `
+    <tr>
+      <td>${d.waktu}</td>
+      <td><strong>${d.kapasitas}%</strong></td>
+      <td><span class="pill ${d.lid === 'TERBUKA' ? 'warn' : 'green'}">${d.lid}</span></td>
+      <td><span class="pill ${d.error === 'ERROR' ? 'warn' : 'green'}">${d.error}</span></td>
+    </tr>`).join('');
+}
+
+function clearLog() {
+  if (!confirm('Hapus semua log riwayat?')) return;
+  logData = [];
+  localStorage.removeItem('log_data');
+  renderLog();
+  showToast('🗑️ Log dihapus');
+}
+
+function exportCSV() {
+  if (!logData.length) { showToast('⚠️ Tidak ada data untuk diekspor', true); return; }
+  const header = 'Waktu,Kapasitas (%),Status Tutup,Status Error\n';
+  const rows   = logData.map(d => `"${d.waktu}",${d.kapasitas},"${d.lid}","${d.error}"`).join('\n');
+  const blob   = new Blob([header + rows], { type: 'text/csv' });
+  const a      = document.createElement('a');
+  a.href       = URL.createObjectURL(blob);
+  a.download   = 'log_tong_sampah_' + new Date().toLocaleDateString('id-ID').replaceAll('/','') + '.csv';
+  a.click();
+  showToast('⬇️ File CSV berhasil diunduh!');
+}
+
+// ─────────────────────────────────────────
+// STATUS INDICATOR
+// ─────────────────────────────────────────
+function setConnStatus(status) {
+  const dot  = document.getElementById('connDot');
+  const text = document.getElementById('connText');
+  dot.className = 'conn-dot ' + status;
+  text.textContent = status === 'online' ? 'Online' : status === 'offline' ? 'Offline' : 'Menghubungkan...';
+  isConnected = status === 'online';
+}
+
+function showBanner(msg) {
+  document.getElementById('errMsg').textContent = msg;
+  document.getElementById('errBanner').classList.add('show');
+}
+
+function hideBanner() {
+  document.getElementById('errBanner').classList.remove('show');
+}
+
+// ─────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>
